@@ -27,26 +27,32 @@ gm_dta <- auto_vs_15 %>%
          tenure = yrout15_new.0 - yout16.0, # creating P-Y column that starts at the beginning of the year people leave work and ends at the end of the year they die or end of follow up (2016)
          age_out = YOUT16 - YOB, # calculate age at leaving work
 #         age_cat_out = cut_number(age_out, n = 5, ordered_result = FALSE), # creates 5 age categories with = nb # create age categories - dependent on question
-         ALD = ifelse(cod_15 == "5710" | # Alcoholic fatty liver ICD9 (2) # ADD K70, K73, K74 with ICD9 EQUIVALENTS (CASE AND DEATON 2015)
+         ALD = ifelse(cod_15 == "5710" | # Alcoholic fatty liver ICD9 (2) 
                       cod_15 == "5711" | # Acute alcoholic hepatitis ICD9 (0)
                       cod_15 == "5712" | # Alcoholic cirrhosis of liver ICD9 (12)
                         cod_15 == "5713" | # Alcoholic liver damage, unspecified ICD9 (2)
                         cod_15 == "5714" | # Chronic hepatitis ICD9 (1)
                         cod_15 == "5715" | # Cirrhosis of liver without mention of alcohol ICD9 (16)
-                        cod_15 == "571x" | # (305)
+                        cod_15 == "5716" | # Biliary cirrhosis
+                        cod_15 == "5719" | # Unspecified chronic liver disease without mention of alcohol
+                        cod_15 == "571x" | # alcohol-related, but missing last nb
                         cod_15 == "K700" | # Alcoholic fatty liver ICD10
                         cod_15 == "K701" | # Alcoholic hepatitis ICD10
                         cod_15 == "K702" | # Alcoholic fibrosis and sclerosis of liver ICD10
                         cod_15 == "K703" | # Alcoholic cirrhosis of liver ICD10
                         cod_15 == "K704" | # Alcoholic hepatic failure ICD10
                         cod_15 == "K709" | # Alcoholic liver disease, unspecified ICD 10
+                        cod_15 == "K730" | # Chronic persistent hepatitis, not elsewhere classified
+                        cod_15 == "K731" | # Chronic lobular hepatitis, not elsewhere classified
+                        cod_15 == "K732" | # Chronic active hepatitis, not elsewhere classified
+                        cod_15 == "K738" | # Other chronic hepatitis, not elsewhere classified
+                        cod_15 == "K739" | # Chronic hepatitis, unspecified
                         cod_15 == "K740" | # Hepatic fibrosis ICD10
                         cod_15 == "K741" | # Hepatic sclerosis ICD10
                         cod_15 == "K742" | # Hepatic fibrosis with hepatic sclerosis ICD10
                         cod_15 == "K743" | # Primary biliary cirrhosis ICD10
                         cod_15 == "K744" | # Secondary biliary cirrhosis ICD10
                         cod_15 == "K745" | # Biliary cirrhosis, unspecified ICD10
-                        cod_15 == "K746" | # other and unspecified cirrhosis of liver ICD10
-                        cod_15 == "K760", 1, 0)) %>% # fatty (change of) liver, not elsewhere classified ICD10
+                        cod_15 == "K746", 1, 0)) %>% # Other and unspecified cirrhosis of liver
   select(-FINRACE, # deselect original race and sex coding to make dataset cleaner
          -SEX)
