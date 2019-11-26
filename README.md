@@ -26,7 +26,6 @@ gm_dta <- auto_vs_15 %>%
          sex = ifelse(SEX == 2, 0, 1), # changing female to 0, male = 1
          tenure = yrout15_new.0 - yout16.0, # creating P-Y column that starts at the beginning of the year people leave work and ends at the end of the year they die or end of follow up (2016)
          age_out = YOUT16 - YOB, # calculate age at leaving work
-#         age_cat_out = cut_number(age_out, n = 5, ordered_result = FALSE), # creates 5 age categories with = nb # create age categories - dependent on question
          ALD = ifelse(cod_15 == "5710" | # Alcoholic fatty liver ICD9 (2) 
                       cod_15 == "5711" | # Acute alcoholic hepatitis ICD9 (0)
                       cod_15 == "5712" | # Alcoholic cirrhosis of liver ICD9 (12)
@@ -56,3 +55,24 @@ gm_dta <- auto_vs_15 %>%
                         cod_15 == "K746", 1, 0)) %>% # Other and unspecified cirrhosis of liver
   select(-FINRACE, # deselect original race and sex coding to make dataset cleaner
          -SEX)
+         
+# Creating 5 age out categories with ~ equal cases in each category
+gm_dta %>% filter(ALD == 1) %>% summarize(twenty = round(quantile(age_out, 0.2)),
+                                          fourty = round(quantile(age_out, 0.4)),
+                                          sixty = round(quantile(age_out, 0.6)),
+                                          eighty = round(quantile(age_out, 0.8)))
+
+gm_dta %>% summarize(min = trunc(min(age_out)),
+                     max = ceiling(max(age_out)))
+
+# Adding age out categories to gm_dta
+gm_dta <- gm_dta %>% mutate(age_cat_out = ifelse(age_out <= 34, "(18, 34]", # min age_cat to 20th percentile 
+                                       ifelse(age_out > 34 & age_out <= 42, "(34, 42]", # 20th to 40th percentile
+                                       ifelse(age_out > 42 & age_out <= 50, "(42, 50]", # 40th to 60th percentile 
+                                       ifelse(age_out > 50 & age_out <= 59, "(50, 59]", "(59, 85]"))))) # 60th to 80th percentile and 80th to max age_out
+
+# Removing people whose date of death comes before their date 
+gm_dta <- gm_dta %>% 
+  mutate(yod15m = ifelse(is.na(yod15), 9999, yod15)) %>% 
+  filter(!(yod15m < YOUT16)) %>% 
+  select(-(yod15m))
