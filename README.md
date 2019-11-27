@@ -12,13 +12,12 @@ library(survminer)
 # reading in original dataset
 auto_vs_15 <- read_sas("auto_vs_15.sas7bdat")
 
-# Reading in data and subsetting dataset
-# MAIN GM DATA
+# Subsetting dataset
 gm_dta <- auto_vs_15 %>% 
   filter(!(NOHIST == 1), 
          !(WH == 0)) %>% # excluding people with < 50% work history (standard)
   select(cod_15, V_ICD, FINRACE, SEX, # selecting relevant variables (ICD codes, ICD 9 or 10, race, sex)
-         oddend, STUDYNO, V_ICD, YOB, PLANT, # (subjects with a weird end date for follow-up, study number, year of birth, plant #)
+         oddend, STUDYNO, YOB, PLANT, # (subjects with a weird end date for follow-up, study number, year of birth, plant #)
          yod15, YOUT16, yrin16, yrout15_new) %>% # If subject was still at GM for end of exposure assessment, YOUT = 95 (year of death, year of leaving work, year of entering work, year of leaving dataset (either yod or 2016 end of follow-up)
   mutate(yout16.0 = trunc(YOUT16) + 1900, # truncating years of leaving work for P-Y calculation
          yrout15_new.0 = ceiling(yrout15_new) + 1900, # taking ceiling of year of leaving cohort for P-Y calculation
@@ -26,7 +25,7 @@ gm_dta <- auto_vs_15 %>%
          sex = ifelse(SEX == 2, 0, 1), # changing female to 0, male = 1
          tenure = yrout15_new.0 - yout16.0, # creating P-Y column that starts at the beginning of the year people leave work and ends at the end of the year they die or end of follow up (2016)
          age_out = YOUT16 - YOB, # calculate age at leaving work
-         ALD = ifelse(cod_15 == "5710" | # Alcoholic fatty liver ICD9 (2) 
+         ALD = ifelse(cod_15 == "5710" | # Alcoholic fatty liver ICD9 (2) # ADD K70, K73, K74 with ICD9 EQUIVALENTS (CASE AND DEATON 2015)
                       cod_15 == "5711" | # Acute alcoholic hepatitis ICD9 (0)
                       cod_15 == "5712" | # Alcoholic cirrhosis of liver ICD9 (12)
                         cod_15 == "5713" | # Alcoholic liver damage, unspecified ICD9 (2)
@@ -54,10 +53,14 @@ gm_dta <- auto_vs_15 %>%
                         cod_15 == "K745" | # Biliary cirrhosis, unspecified ICD10
                         cod_15 == "K746", 1, 0)) %>% # Other and unspecified cirrhosis of liver
   select(-FINRACE, # deselect original race and sex coding to make dataset cleaner
-         -SEX)
-         
-# Creating 5 age out categories with ~ equal cases in each category
-gm_dta %>% filter(ALD == 1) %>% summarize(twenty = round(quantile(age_out, 0.2)),
+         -SEX) %>% 
+  mutate(yod15m = ifelse(is.na(yod15), 9999, yod15)) %>% # Removing people whose date of death comes before their date 
+  filter(!(yod15m < YOUT16)) %>% 
+  select(-(yod15m))
+
+# Determining age categories (5) with = number of cases in each 
+ALD_perc <- gm_dta %>% 
+  filter(ALD == 1) %>% summarize(twenty = round(quantile(age_out, 0.2)),
                                           fourty = round(quantile(age_out, 0.4)),
                                           sixty = round(quantile(age_out, 0.6)),
                                           eighty = round(quantile(age_out, 0.8)))
@@ -70,9 +73,3 @@ gm_dta <- gm_dta %>% mutate(age_cat_out = ifelse(age_out <= 34, "(18, 34]", # mi
                                        ifelse(age_out > 34 & age_out <= 42, "(34, 42]", # 20th to 40th percentile
                                        ifelse(age_out > 42 & age_out <= 50, "(42, 50]", # 40th to 60th percentile 
                                        ifelse(age_out > 50 & age_out <= 59, "(50, 59]", "(59, 85]"))))) # 60th to 80th percentile and 80th to max age_out
-
-# Removing people whose date of death comes before their date 
-gm_dta <- gm_dta %>% 
-  mutate(yod15m = ifelse(is.na(yod15), 9999, yod15)) %>% 
-  filter(!(yod15m < YOUT16)) %>% 
-  select(-(yod15m))
