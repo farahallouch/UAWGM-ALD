@@ -12,7 +12,6 @@ library(survminer)
 # reading in original dataset
 auto_vs_15 <- read_sas("auto_vs_15.sas7bdat")
 
-# Subsetting dataset
 gm_dta <- auto_vs_15 %>% 
   filter(!(NOHIST == 1), 
          !(WH == 0)) %>% # excluding people with < 50% work history (standard)
@@ -23,7 +22,7 @@ gm_dta <- auto_vs_15 %>%
          yrout15_new.0 = ceiling(yrout15_new) + 1900, # taking ceiling of year of leaving cohort for P-Y calculation
          race = ifelse(FINRACE != 2, 1, 0), # changing unknowns to white = 1 (standard), black = 0
          sex = ifelse(SEX == 2, 0, 1), # changing female to 0, male = 1
-         tenure = yrout15_new.0 - yout16.0, # creating P-Y column that starts at the beginning of the year people leave work and ends at the end of the year they die or end of follow up (2016)
+         person_years = yrout15_new.0 - yout16.0, # creating P-Y column that starts at the beginning of the year people leave work and ends at the end of the year they die or end of follow up (2016)
          age_out = YOUT16 - YOB, # calculate age at leaving work
          ALD = ifelse(cod_15 == "5710" | # Alcoholic fatty liver ICD9 (2) # ADD K70, K73, K74 with ICD9 EQUIVALENTS (CASE AND DEATON 2015)
                       cod_15 == "5711" | # Acute alcoholic hepatitis ICD9 (0)
@@ -56,7 +55,8 @@ gm_dta <- auto_vs_15 %>%
          -SEX) %>% 
   mutate(yod15m = ifelse(is.na(yod15), 9999, yod15)) %>% # Removing people whose date of death comes before their date 
   filter(!(yod15m < YOUT16)) %>% 
-  select(-(yod15m))
+  select(-(yod15m)) %>% 
+  filter(!(person_years <= 0)) # excluding negative person years
 
 # Determining age categories (5) with = number of cases in each 
 ALD_perc <- gm_dta %>% 
@@ -69,7 +69,28 @@ gm_dta %>% summarize(min = trunc(min(age_out)),
                      max = ceiling(max(age_out)))
 
 # Adding age out categories to gm_dta
-gm_dta <- gm_dta %>% mutate(age_cat_out = ifelse(age_out <= 34, "(18, 34]", # min age_cat to 20th percentile 
+gm_dta <- gm_dta %>% 
+  mutate(age_cat_out = ifelse(age_out <= 34, "(18, 34]", # min age_cat to 20th percentile 
                                        ifelse(age_out > 34 & age_out <= 42, "(34, 42]", # 20th to 40th percentile
                                        ifelse(age_out > 42 & age_out <= 50, "(42, 50]", # 40th to 60th percentile 
                                        ifelse(age_out > 50 & age_out <= 59, "(50, 59]", "(59, 85]"))))) # 60th to 80th percentile and 80th to max age_out
+  
+# Relevel age categories
+gm_dta$age_cat_out <- relevel(gm_dta$age_cat_out, "(59, 85]") # 59+ as reference
+
+# Cox model data with non-time varying covariates
+gm_dta_cox <- gm_dta %>% 
+  filter(sex == 1)
+
+# Cox model data with calendar year time-varing covariate
+gm_dta_cox_tv <- gm_dta %>% 
+  expandRows("person_years", count.is.col = TRUE, drop = FALSE) %>% 
+  group_by(STUDYNO) %>%
+  mutate(year_obs = row_number(),
+         cal_obs = floor(1900 + YOUT16 + (year_obs - 1)),
+         ALD = ifelse(ALD == 1 & (1900 + floor(yod15)) == cal_obs, 1, 0),
+         cal_obs_cat = cut(cal_obs, breaks = c(1900, seq(1950, 2010, by = 10)))) %>% 
+  filter(sex == 1)
+
+# Relevel calendar year categories
+gm_dta_cox_tv$cal_obs_cat <- relevel(gm_dta_cox_tv$cal_obs_cat, "(1.97e+03,1.98e+03]")
