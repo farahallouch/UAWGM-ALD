@@ -12,6 +12,7 @@ library(survminer)
 # reading in original dataset
 auto_vs_15 <- read_sas("auto_vs_15.sas7bdat")
 
+# Subsetting dataset
 gm_dta <- auto_vs_15 %>% 
   filter(!(NOHIST == 1), 
          !(WH == 0)) %>% # excluding people with < 50% work history (standard)
@@ -59,21 +60,21 @@ gm_dta <- auto_vs_15 %>%
   filter(!(person_years <= 0)) # excluding negative person years
 
 # Determining age categories (5) with = number of cases in each 
-ALD_perc <- gm_dta %>% 
+gm_dta_cox %>% 
   filter(ALD == 1) %>% summarize(twenty = round(quantile(age_out, 0.2)),
                                           fourty = round(quantile(age_out, 0.4)),
                                           sixty = round(quantile(age_out, 0.6)),
                                           eighty = round(quantile(age_out, 0.8)))
 
-gm_dta %>% summarize(min = trunc(min(age_out)),
+gm_dta_cox %>% summarize(min = trunc(min(age_out)),
                      max = ceiling(max(age_out)))
 
 # Adding age out categories to gm_dta
 gm_dta <- gm_dta %>% 
-  mutate(age_cat_out = ifelse(age_out <= 34, "(18, 34]", # min age_cat to 20th percentile 
-                                       ifelse(age_out > 34 & age_out <= 42, "(34, 42]", # 20th to 40th percentile
+  mutate(age_cat_out = as.factor(ifelse(age_out <= 33, "(18, 33]", # min age_cat to 20th percentile 
+                                       ifelse(age_out > 33 & age_out <= 42, "(34, 42]", # 20th to 40th percentile
                                        ifelse(age_out > 42 & age_out <= 50, "(42, 50]", # 40th to 60th percentile 
-                                       ifelse(age_out > 50 & age_out <= 59, "(50, 59]", "(59, 85]"))))) # 60th to 80th percentile and 80th to max age_out
+                                       ifelse(age_out > 50 & age_out <= 59, "(50, 59]", "(59, 85]")))))) # 60th to 80th percentile and 80th to max age_out
   
 # Relevel age categories
 gm_dta$age_cat_out <- relevel(gm_dta$age_cat_out, "(59, 85]") # 59+ as reference
@@ -94,3 +95,4 @@ gm_dta_cox_tv <- gm_dta %>%
 
 # Relevel calendar year categories
 gm_dta_cox_tv$cal_obs_cat <- relevel(gm_dta_cox_tv$cal_obs_cat, "(1.97e+03,1.98e+03]")
+```
