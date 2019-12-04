@@ -1,0 +1,128 @@
+``` {r, include = TRUE}
+# Subjects per age category
+subjects_table <- gm_dta_cox %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = n())
+
+subjects_total <- gm_dta_cox %>% 
+  summarize(n = n())
+
+subjects_table <- as.data.frame(subjects_table)
+subjects_total <- as.data.frame(subjects_total)
+
+subjects <- format(c(subjects_table[1, 2], subjects_table[2, 2], subjects_table[3, 2], subjects_table[4, 2], subjects_table[5, 2], subjects_total[1, 1]), big.mark = ",", scientific = F)
+
+# PY per age category
+py_table <- gm_dta_cox %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = sum(person_years))
+
+py_total <- gm_dta_cox %>% 
+  summarize(n = sum(person_years))
+
+py_table <- as.data.frame(py_table)
+py_total <- as.data.frame(py_total)
+
+py <- format(c(py_table[1, 2], py_table[2, 2], py_table[3, 2], py_table[4, 2], py_table[5, 2], py_total[1, 1]), big.mark = ",", scientific = F)
+
+# ALD per age category
+ald_table <- gm_dta_cox %>% 
+  group_by(age_cat_out) %>% 
+  filter(ALD == 1) %>% 
+  summarize(n = n())
+
+ald_total <- gm_dta_cox %>% 
+  filter(ALD == 1) %>% 
+  summarize(n = n())
+
+ald_table <- as.data.frame(ald_table)
+ald_total <- as.data.frame(ald_total)
+
+ald <- format(c(ald_table[1, 2], ald_table[2, 2], ald_table[3, 2], ald_table[4, 2], ald_table[5, 2], ald_total[1, 1]), big.mark = ",", scientific = F)
+
+# Plants and age category
+plant_table <- gm_dta_cox %>% 
+  group_by(age_cat_out, PLANT) %>% 
+  summarize(n=n())
+
+plant_total <- gm_dta_cox %>% 
+  group_by(PLANT) %>% 
+  summarise(n=n())
+
+plant_table <- as.data.frame(plant_table)
+plant_total <- as.data.frame(plant_total)
+
+plant <- c(" ", " ", " ", " ", " ", " ")
+plant1 <- format(c(plant_table[1, 3], plant_table[4, 3], plant_table[7, 3], plant_table[10, 3], plant_table[13, 3], plant_total[1, 2]), big.mark = ",", scientific = F)
+plant2 <- format(c(plant_table[2, 3], plant_table[5, 3], plant_table[8, 3], plant_table[11, 3], plant_table[14, 3], plant_total[2, 2]), big.mark = ",", scientific = F)
+plant3 <- format(c(plant_table[3, 3], plant_table[6, 3], plant_table[9, 3], plant_table[12, 3], plant_table[15, 3], plant_total[3, 2]), big.mark = ",", scientific = F)
+
+# Race per age category
+blacks_table <- gm_dta_cox %>% 
+  filter(race == 0) %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = n())
+
+blacks_total <- gm_dta_cox %>% 
+  filter(race == 0) %>% 
+  summarize(n = n())
+
+whites_table <- gm_dta_cox %>% 
+  filter(race == 1) %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = n())
+
+whites_total <- gm_dta_cox %>% 
+  filter(race == 1) %>% 
+  summarize(n = n())
+
+blacks_table <- as.data.frame(blacks_table)
+blacks_total <- as.data.frame(blacks_total)
+whites_table <- as.data.frame(whites_table)
+whites_total <- as.data.frame(whites_total)
+
+race <- c(" ", " ", " ", " ", " ", " ")
+black <- c(blacks_table[1, 2], blacks_table[2, 2], blacks_table[3, 2], blacks_table[4, 2], blacks_table[5, 2], blacks_total[1, 1])
+white <- c(whites_table[1, 2], whites_table[2, 2], whites_table[3, 2], whites_table[4, 2], whites_table[5, 2], whites_total[1, 1])
+
+# Date of hire in age category
+hire_table <- gm_dta_cox %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = round(median(yrin16) + 1900))
+
+hire_total <- gm_dta_cox %>% 
+  summarize(n = round(median(yrin16) + 1900))
+
+hire_table <- as.data.frame(hire_table)
+hire_total <- as.data.frame(hire_total)
+
+hire <- format(c(hire_table[1, 2], hire_table[2, 2], hire_table[3, 2], hire_table[4, 2], hire_table[5, 2], hire_total[1, 1]), scientific = F)
+
+# Date of leaving in age category
+out_table <- gm_dta_cox %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = round(median(YOUT16) + 1900))
+
+out_total <- gm_dta_cox %>% 
+  summarize(n = round(median(YOUT16) + 1900))
+
+out_table <- as.data.frame(out_table)
+out_total <- as.data.frame(out_total)
+
+out <- format(c(out_table[1, 2], out_table[2, 2], out_table[3, 2], out_table[4, 2], out_table[5, 2], out_total[1, 1]), scientific = F)
+
+# Maybe table 1
+tableone <- rbind(subjects, py, ald, plant, plant1, plant2, plant3, race, black, white,  hire, out)
+colnames(tableone) <- c("(61,85]", "(19,31]", "(31,41]", "(41,51]", "(51,61]", "Total")
+rownames(tableone) <- c("Subjects", "Person years of observation", "Alcohol-related liver mortality (ALD) events",
+                        "Plant", "   Plant 1", "   Plant 2", "   Plant 3",
+                        "Race", "   Black", "   White",
+                        "Median year of hire", "Median year of leaving work")
+
+# Need to fix formatting, but largely there!
+kable(tableone) %>% 
+  kable_styling(latex_options = "striped") %>% 
+  add_indent(c(5, 6, 7, 9, 10)) %>% 
+#  add_footnote()
+
+```
