@@ -1,0 +1,18 @@
+```{r, include = TRUE}
+# Set up the survival object
+ald_gm <- with(gm_dta_cox, Surv(time = person_years, event = ALD))
+
+# Estimate Kaplan-Meier Survival Curves by smoking status
+km_gm <- with(gm_dta_cox, survfit(ald_gm ~ age_cat_out))
+
+km_plot <- ggsurvplot(km_gm, 
+           data = gm_dta_cox,
+           ggtheme = theme_minimal(),
+           legend = "right",
+           ylim = c(0.97, 1),
+           pval = TRUE,
+           pval.coord = c(5, 0.9775),
+           title = "Kaplan-Meier curves: Time to ALD death by age at leaving work
+               in categories, United Autoworkers - General Motors (UAW-GM) Cohort")
+km_plot
+```
