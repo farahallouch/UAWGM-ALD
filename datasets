@@ -6,6 +6,7 @@ library(tidyverse)
 library(haven)
 library(splitstackshape)
 library(knitr)
+library(kableExtra)
 library(survival)
 library(survminer)
 
@@ -21,6 +22,7 @@ gm_dta <- auto_vs_15 %>%
          yod15, YOUT16, yrin16, yrout15_new) %>% # If subject was still at GM for end of exposure assessment, YOUT = 95 (year of death, year of leaving work, year of entering work, year of leaving dataset (either yod or 2016 end of follow-up)
   mutate(yout16.0 = trunc(YOUT16) + 1900, # truncating years of leaving work for P-Y calculation
          yrout15_new.0 = ceiling(yrout15_new) + 1900, # taking ceiling of year of leaving cohort for P-Y calculation
+         tenure = YOUT16 - yrin16, # time in employment
          race = ifelse(FINRACE != 2, 1, 0), # changing unknowns to white = 1 (standard), black = 0
          sex = ifelse(SEX == 2, 0, 1), # changing female to 0, male = 1
          person_years = yrout15_new.0 - yout16.0, # creating P-Y column that starts at the beginning of the year people leave work and ends at the end of the year they die or end of follow up (2016)
@@ -55,11 +57,18 @@ gm_dta <- auto_vs_15 %>%
   select(-FINRACE, # deselect original race and sex coding to make dataset cleaner
          -SEX) %>% 
   mutate(yod15m = ifelse(is.na(yod15), 9999, yod15)) %>% # Removing people whose date of death comes before their date 
-  filter(!(yod15m < YOUT16)) %>% 
+  filter(!(yod15m <= YOUT16)) %>% 
   select(-(yod15m)) %>% 
-  filter(!(person_years <= 0)) # excluding negative person years
+  filter(!(YOUT16 <= yrin16), 
+         !(PLANT == 9),
+         !(is.na(person_years)))
 
 # Determining age categories (5) with = number of cases in each 
+gm_dta_cox <- gm_dta %>% 
+  filter(sex == 1,
+         !(YOUT16 == 95), # people who "left" in 95 didnt actually leave work - we just dont have any work info on them
+         !(ALD == 1 & person_years == 1)) # excluding people who died of ALD right after leaving work
+
 gm_dta_cox %>% 
   filter(ALD == 1) %>% summarize(twenty = round(quantile(age_out, 0.2)),
                                           fourty = round(quantile(age_out, 0.4)),
@@ -71,28 +80,29 @@ gm_dta_cox %>% summarize(min = trunc(min(age_out)),
 
 # Adding age out categories to gm_dta
 gm_dta <- gm_dta %>% 
-  mutate(age_cat_out = as.factor(ifelse(age_out <= 33, "(18, 33]", # min age_cat to 20th percentile 
-                                       ifelse(age_out > 33 & age_out <= 42, "(34, 42]", # 20th to 40th percentile
-                                       ifelse(age_out > 42 & age_out <= 50, "(42, 50]", # 40th to 60th percentile 
-                                       ifelse(age_out > 50 & age_out <= 59, "(50, 59]", "(59, 85]")))))) # 60th to 80th percentile and 80th to max age_out
-  
+  mutate(age_cat_out = cut(age_out, c(19, 31, 41, 51, 61, 85), right = TRUE))
+
 # Relevel age categories
-gm_dta$age_cat_out <- relevel(gm_dta$age_cat_out, "(59, 85]") # 59+ as reference
+gm_dta$age_cat_out <- relevel(gm_dta$age_cat_out, "(61,85]") # 61+ as reference
 
 # Cox model data with non-time varying covariates
 gm_dta_cox <- gm_dta %>% 
-  filter(sex == 1)
+  filter(sex == 1,
+         !(YOUT16 == 95),
+         !(ALD == 1 & person_years == 1))
 
 # Cox model data with calendar year time-varing covariate
 gm_dta_cox_tv <- gm_dta %>% 
+    filter(sex == 1,
+         !(YOUT16 == 95),
+         !(ALD == 1 & person_years == 1)) %>% 
   expandRows("person_years", count.is.col = TRUE, drop = FALSE) %>% 
   group_by(STUDYNO) %>%
   mutate(year_obs = row_number(),
          cal_obs = floor(1900 + YOUT16 + (year_obs - 1)),
          ALD = ifelse(ALD == 1 & (1900 + floor(yod15)) == cal_obs, 1, 0),
-         cal_obs_cat = cut(cal_obs, breaks = c(1900, seq(1950, 2010, by = 10)))) %>% 
-  filter(sex == 1)
+         cal_obs_cat = cut(cal_obs, breaks = c(1900, 1960, 1970, 1980, 1990, 2000, 2015)))
 
 # Relevel calendar year categories
-gm_dta_cox_tv$cal_obs_cat <- relevel(gm_dta_cox_tv$cal_obs_cat, "(1.97e+03,1.98e+03]")
+gm_dta_cox_tv$cal_obs_cat <- relevel(gm_dta_cox_tv$cal_obs_cat, "(2e+03,2.02e+03]")
 ```
