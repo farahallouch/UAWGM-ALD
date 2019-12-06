@@ -111,6 +111,19 @@ hire_total <- as.data.frame(hire_total)
 
 hire <- format(c(hire_table[1, 2], hire_table[2, 2], hire_table[3, 2], hire_table[4, 2], hire_table[5, 2], hire_total[1, 1]), scientific = F)
 
+# Employment time in age category
+employ_table <- gm_dta_cox %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = round(median(YOUT16 - yrin16)))
+
+employ_total <- gm_dta_cox %>% 
+  summarize(n = round(median(YOUT16 - yrin16)))
+
+employ_table <- as.data.frame(employ_table)
+employ_total <- as.data.frame(employ_total)
+
+employ <- format(c(employ_table[1, 2], employ_table[2, 2], employ_table[3, 2], employ_table[4, 2], employ_table[5, 2], employ_total[1, 1]), scientific = F)
+
 # Date of leaving in age category
 out_table <- gm_dta_cox %>% 
   group_by(age_cat_out) %>% 
@@ -125,7 +138,10 @@ out_total <- as.data.frame(out_total)
 out <- format(c(out_table[1, 2], out_table[2, 2], out_table[3, 2], out_table[4, 2], out_table[5, 2], out_total[1, 1]), scientific = F)
 
 # Maybe table 1
-tableone <- rbind(subjects, py, age, ald, plant, plant1, plant2, plant3, race, black, white,  hire, out)
+tableone <- rbind(subjects, py, age, ald,
+                  plant, plant1, plant2, plant3,
+                  race, black, white,
+                  hire, employ, out)
 colnames(tableone) <- c("(61,85]", "(19,31]", "(31,41]", "(41,51]", "(51,61]", "Total")
 rownames(tableone) <- c("Subjects",
                         "Person years of observation",
@@ -134,6 +150,7 @@ rownames(tableone) <- c("Subjects",
                         "Plant", "Plant 1", "Plant 2", "Plant 3",
                         "Race", "Black", "White",
                         "Median year of hire",
+                        "Median time of employment",
                         "Median year of leaving work")
 
 kable(tableone) %>% 
