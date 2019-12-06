@@ -1,4 +1,4 @@
-``` {r, include = TRUE}
+```{r include = TRUE}
 # Subjects per age category
 subjects_table <- gm_dta_cox %>% 
   group_by(age_cat_out) %>% 
@@ -24,6 +24,19 @@ py_table <- as.data.frame(py_table)
 py_total <- as.data.frame(py_total)
 
 py <- format(c(py_table[1, 2], py_table[2, 2], py_table[3, 2], py_table[4, 2], py_table[5, 2], py_total[1, 1]), big.mark = ",", scientific = F)
+
+# Average age per category
+age_table <- gm_dta_cox %>% 
+  group_by(age_cat_out) %>% 
+  summarize(n = round(median(age_out)), 2)
+
+age_total <- gm_dta_cox %>% 
+  summarize(n = round(median(age_out)), 2)
+
+age_table <- as.data.frame(age_table)
+age_total <- as.data.frame(age_total)
+
+age <- format(c(age_table[1, 2], age_table[2, 2], age_table[3, 2], age_table[4, 2], age_table[5, 2], age_total[1, 1]), big.mark = ",", scientific = F)
 
 # ALD per age category
 ald_table <- gm_dta_cox %>% 
@@ -112,17 +125,19 @@ out_total <- as.data.frame(out_total)
 out <- format(c(out_table[1, 2], out_table[2, 2], out_table[3, 2], out_table[4, 2], out_table[5, 2], out_total[1, 1]), scientific = F)
 
 # Maybe table 1
-tableone <- rbind(subjects, py, ald, plant, plant1, plant2, plant3, race, black, white,  hire, out)
+tableone <- rbind(subjects, py, age, ald, plant, plant1, plant2, plant3, race, black, white,  hire, out)
 colnames(tableone) <- c("(61,85]", "(19,31]", "(31,41]", "(41,51]", "(51,61]", "Total")
-rownames(tableone) <- c("Subjects", "Person years of observation", "Alcohol-related liver mortality (ALD) events",
-                        "Plant", "   Plant 1", "   Plant 2", "   Plant 3",
-                        "Race", "   Black", "   White",
-                        "Median year of hire", "Median year of leaving work")
+rownames(tableone) <- c("Subjects",
+                        "Person years of observation",
+                        "Median age at leaving work",
+                        "Alcohol-related liver mortality (ALD) events",
+                        "Plant", "Plant 1", "Plant 2", "Plant 3",
+                        "Race", "Black", "White",
+                        "Median year of hire",
+                        "Median year of leaving work")
 
-# Need to fix formatting, but largely there!
 kable(tableone) %>% 
   kable_styling(latex_options = "striped") %>% 
-  add_indent(c(5, 6, 7, 9, 10)) %>% 
+  add_indent(c(6, 7, 8, 10, 11))
 #  add_footnote()
-
 ```
