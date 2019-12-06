@@ -150,7 +150,7 @@ rownames(tableone) <- c("Subjects",
                         "Plant", "Plant 1", "Plant 2", "Plant 3",
                         "Race", "Black", "White",
                         "Median year of hire",
-                        "Median time of employment",
+                        "Median years of employment",
                         "Median year of leaving work")
 
 kable(tableone) %>% 
