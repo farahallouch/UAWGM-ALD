@@ -1,0 +1,54 @@
+``` {r, include = TRUE}
+# ALD over time
+denom_py <- gm_dta_cox_tv %>%
+  group_by(cal_obs) %>%
+  summarize(n_py = n_distinct(STUDYNO)) %>% 
+  rename(calyear = cal_obs)
+
+num_event_ALD <- gm_dta_cox_tv %>%
+  filter(ALD == 1) %>%
+  group_by(cal_obs) %>% 
+  summarize(ALD = n_distinct(STUDYNO)) %>% 
+  rename(calyear = cal_obs)
+
+deaths <- gm_dta_cox %>% 
+  group_by(trunc(yod15) + 1900) %>% 
+  summarise(n = n())
+
+colnames(deaths) <- c("calyear",
+                        "n_deaths")
+
+new <- full_join(denom_py, num_event_ALD, by = "calyear") %>%
+  mutate(ALD = ifelse(is.na(ALD), 0, ALD),
+         rate = ALD / n_py) 
+
+news <-full_join(new, deaths, by = "calyear") %>% 
+  mutate(prev = ALD / n_deaths) %>% 
+  filter(!(is.na(calyear)))
+
+# ALD rates per calendar year
+rates_plot <- ggplot(data = news) +
+  geom_line(aes(x = calyear, y = rate*10000), color = "forest green") +
+  labs(x = "Calendar Year",
+       y = "Incidence rate of ALD 
+        per 10,000 person-years") +
+  theme_minimal()
+rates_plot
+
+# ALD % per total deaths per calendar year
+prev_plot <- ggplot(data = news) +
+  geom_line(aes(x = calyear, y = prev*100), color = "red") +
+  labs(x = "Calendar Year",
+       y = "% ALD of total deaths") +
+  theme_minimal()
+prev_plot
+
+# Number of ALD cases per calendar year
+ALD_plot <- ggplot(data = news) +
+  geom_line(aes(x = calyear, y = ALD), color = "gold") +
+  labs(x = "Calendar Year",
+       y = "Incidence rate of ALD 
+        per 10,000 person-years") +
+  theme_minimal()
+ALD_plot
+```
