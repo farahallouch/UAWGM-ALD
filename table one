@@ -155,6 +155,7 @@ rownames(tableone) <- c("Subjects",
 
 kable(tableone) %>% 
   kable_styling(latex_options = "striped") %>% 
-  add_indent(c(6, 7, 8, 10, 11))
+  add_indent(c(6, 7, 8, 10, 11)) %>%
+  row_spec(0, bold = TRUE)
 #  add_footnote()
 ```
