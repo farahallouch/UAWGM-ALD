@@ -26,3 +26,12 @@ coxph_left_work_60 <- coxph(Surv(time0, person_years.0, ALD) ~ left_b4_60 + fact
 
 summary(coxph_left_work_60)
 ```
+
+```{r}
+# Checking PH assumption
+## Unadjusted model
+cox.zph(coxph_unadj)
+
+## Adjusted model
+ph <- cox.zph(coxph_adj)
+```
