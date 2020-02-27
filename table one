@@ -1,161 +1,345 @@
-```{r include = TRUE}
-# Subjects per age category
-subjects_table <- gm_dta_cox %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = n())
-
+# Table 1
+```{r}
+# Subjects
+## Total
 subjects_total <- gm_dta_cox %>% 
   summarize(n = n())
+subjects_total
 
-subjects_table <- as.data.frame(subjects_table)
-subjects_total <- as.data.frame(subjects_total)
-
-subjects <- format(c(subjects_table[1, 2], subjects_table[2, 2], subjects_table[3, 2], subjects_table[4, 2], subjects_table[5, 2], subjects_total[1, 1]), big.mark = ",", scientific = F)
-
-# PY per age category
-py_table <- gm_dta_cox %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = sum(person_years))
-
+### PY
 py_total <- gm_dta_cox %>% 
   summarize(n = sum(person_years))
+py_total
 
-py_table <- as.data.frame(py_table)
-py_total <- as.data.frame(py_total)
-
-py <- format(c(py_table[1, 2], py_table[2, 2], py_table[3, 2], py_table[4, 2], py_table[5, 2], py_total[1, 1]), big.mark = ",", scientific = F)
-
-# Average age per category
-age_table <- gm_dta_cox %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = round(median(age_out)), 2)
-
-age_total <- gm_dta_cox %>% 
-  summarize(n = round(median(age_out)), 2)
-
-age_table <- as.data.frame(age_table)
-age_total <- as.data.frame(age_total)
-
-age <- format(c(age_table[1, 2], age_table[2, 2], age_table[3, 2], age_table[4, 2], age_table[5, 2], age_total[1, 1]), big.mark = ",", scientific = F)
-
-# ALD per age category
-ald_table <- gm_dta_cox %>% 
-  group_by(age_cat_out) %>% 
+## With ALD
+subjects_ald <- gm_dta_cox %>% 
   filter(ALD == 1) %>% 
   summarize(n = n())
+subjects_ald
 
-ald_total <- gm_dta_cox %>% 
+### PY
+py_ald <- gm_dta_cox %>% 
   filter(ALD == 1) %>% 
+  summarize(n = sum(person_years))
+py_ald
+
+subjects <- c("46,281 (1,758,897)", "475 (12,692)")
+```
+
+```{r}
+# Race 
+## Black total
+black_total <- gm_dta_cox %>% 
+  filter(race == 0) %>% 
   summarize(n = n())
+black_total
 
-ald_table <- as.data.frame(ald_table)
-ald_total <- as.data.frame(ald_total)
+### Percent
+round(black_total/subjects_total*100)
 
-ald <- format(c(ald_table[1, 2], ald_table[2, 2], ald_table[3, 2], ald_table[4, 2], ald_table[5, 2], ald_total[1, 1]), big.mark = ",", scientific = F)
+## Black with ALD
+black_ald <- gm_dta_cox %>% 
+  filter(race == 0,
+         ALD == 1) %>% 
+  summarize(n = n())
+black_ald
 
-# Plants and age category
-plant_table <- gm_dta_cox %>% 
-  group_by(age_cat_out, PLANT) %>% 
-  summarize(n=n())
+### Percent
+round(black_ald/subjects_ald*100)
 
-plant_total <- gm_dta_cox %>% 
-  group_by(PLANT) %>% 
+## White total
+white_total <- gm_dta_cox %>% 
+  filter(race == 1) %>% 
+  summarize(n = n())
+white_total
+
+### Percent
+round(white_total/subjects_total*100)
+
+## White with ALD
+white_ald <- gm_dta_cox %>% 
+  filter(race == 1,
+         ALD == 1) %>% 
+  summarize(n = n())
+white_ald
+
+### Percent
+round(white_ald/subjects_ald*100)
+
+race <- c(" ", " ")
+black <- c("7,736 (17%)", "71 (15%)")
+white <- c("38,545 (83%)", "404 (85%)")
+```
+
+```{r}
+# Sex
+## Females total
+female_total <- gm_dta_cox %>% 
+  filter(sex == 0) %>% 
+  summarize(n = n())
+female_total
+
+### Percent
+round(female_total / subjects_total * 100)
+
+## Males total
+male_total <- gm_dta_cox %>% 
+  filter(sex == 1) %>% 
+  summarize(n = n())
+male_total
+
+### Percent
+round(male_total / subjects_total * 100)
+
+## Females with ALD
+female_ald <- gm_dta_cox %>% 
+  filter(sex == 0,
+         ALD == 1) %>% 
+  summarize(n = n())
+female_ald
+
+### Percent
+round(female_ald / subjects_ald * 100)
+
+## Males with ALD
+male_ald <- gm_dta_cox %>% 
+  filter(sex == 1,
+         ALD == 1) %>% 
+  summarize(n = n())
+male_ald
+
+### Percent
+round(male_ald / subjects_ald * 100)
+
+sex <- c(" ", " ")
+female <- c("4,832 (10%)", "23 (5%)")
+male <- c("41,449 (90%)", "452 (95%)")
+```
+
+```{r}
+# Plants
+## Plant 1 total
+plant1_total <- gm_dta_cox %>% 
+  filter(PLANT == 1) %>% 
   summarise(n=n())
+plant1_total
 
-plant_table <- as.data.frame(plant_table)
-plant_total <- as.data.frame(plant_total)
+### Percent
+round(plant1_total/subjects_total*100)
 
-plant <- c(" ", " ", " ", " ", " ", " ")
-plant1 <- format(c(plant_table[1, 3], plant_table[4, 3], plant_table[7, 3], plant_table[10, 3], plant_table[13, 3], plant_total[1, 2]), big.mark = ",", scientific = F)
-plant2 <- format(c(plant_table[2, 3], plant_table[5, 3], plant_table[8, 3], plant_table[11, 3], plant_table[14, 3], plant_total[2, 2]), big.mark = ",", scientific = F)
-plant3 <- format(c(plant_table[3, 3], plant_table[6, 3], plant_table[9, 3], plant_table[12, 3], plant_table[15, 3], plant_total[3, 2]), big.mark = ",", scientific = F)
+## Plant 2 total
+plant2_total <- gm_dta_cox %>% 
+  filter(PLANT == 2) %>% 
+  summarise(n=n())
+plant2_total
 
-# Race per age category
-blacks_table <- gm_dta_cox %>% 
-  filter(race == 0) %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = n())
+### Percent
+round(plant2_total/subjects_total*100)
 
-blacks_total <- gm_dta_cox %>% 
-  filter(race == 0) %>% 
-  summarize(n = n())
+## Plant 3 total
+plant3_total <- gm_dta_cox %>% 
+  filter(PLANT == 3) %>% 
+  summarise(n=n())
+plant3_total
 
-whites_table <- gm_dta_cox %>% 
-  filter(race == 1) %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = n())
+### Percent
+round(plant3_total/subjects_total*100)
 
-whites_total <- gm_dta_cox %>% 
-  filter(race == 1) %>% 
-  summarize(n = n())
+## Plant 1 with ALD
+plant1_ald <- gm_dta_cox %>% 
+  filter(PLANT == 1,
+         ALD == 1) %>% 
+  summarise(n=n())
+plant1_ald
 
-blacks_table <- as.data.frame(blacks_table)
-blacks_total <- as.data.frame(blacks_total)
-whites_table <- as.data.frame(whites_table)
-whites_total <- as.data.frame(whites_total)
+### Percent
+round(plant1_ald/subjects_ald*100)
 
-race <- c(" ", " ", " ", " ", " ", " ")
-black <- c(blacks_table[1, 2], blacks_table[2, 2], blacks_table[3, 2], blacks_table[4, 2], blacks_table[5, 2], blacks_total[1, 1])
-white <- c(whites_table[1, 2], whites_table[2, 2], whites_table[3, 2], whites_table[4, 2], whites_table[5, 2], whites_total[1, 1])
+## Plant 2 with ALD
+plant2_ald <- gm_dta_cox %>% 
+  filter(PLANT == 2,
+         ALD == 1) %>% 
+  summarise(n=n())
+plant2_ald
 
-# Date of hire in age category
-hire_table <- gm_dta_cox %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = round(median(yrin16) + 1900))
+### Percent
+round(plant2_ald/subjects_ald*100)
 
+## Plant 3 with ALD
+plant3_ald <- gm_dta_cox %>% 
+  filter(PLANT == 3,
+         ALD == 1) %>% 
+  summarise(n=n())
+plant3_ald
+
+### Percent
+round(plant3_ald/subjects_ald*100)
+
+plant <- c(" ", " ")
+plant1 <- c("16,304 (35%)", "221 (47%)")
+plant2 <- c("17,216 (37%)", "165 (35%)")
+plant3 <- c("12,761 (28%)", "89 (19%)")
+```
+
+```{r}
+# Years of follow-up
+## Total
+follow_total <- gm_dta_cox %>% 
+  summarize(mean = mean(person_years),
+            sd = sd(person_years))
+round(follow_total, 2)
+
+## ALD
+follow_ald <- gm_dta_cox %>% 
+  filter(ALD == 1) %>% 
+    summarize(mean = mean(person_years),
+              sd = sd(person_years))
+round(follow_ald, 2)
+
+follow <- c("38.00 (13.28)", "26.72 (11.65)")
+```
+
+```{r}
+# Year of entering work
+## Total
 hire_total <- gm_dta_cox %>% 
-  summarize(n = round(median(yrin16) + 1900))
+  summarize(mean = mean(YIN16),
+            sd = sd(YIN16))
+round(hire_total)
 
-hire_table <- as.data.frame(hire_table)
-hire_total <- as.data.frame(hire_total)
+## ALD
+hire_ald <- gm_dta_cox %>% 
+  filter(ALD == 1) %>% 
+    summarize(mean = mean(YIN16),
+              sd = sd(YIN16))
+round(hire_ald) 
 
-hire <- format(c(hire_table[1, 2], hire_table[2, 2], hire_table[3, 2], hire_table[4, 2], hire_table[5, 2], hire_total[1, 1]), scientific = F)
+hire <- c("1958 (16)", "1955 (15)")
+```
 
-# Employment time in age category
-employ_table <- gm_dta_cox %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = round(median(YOUT16 - yrin16)))
+```{r}
+# Age at hire
+## Total
+age_hire_total <- gm_dta_cox %>% 
+  summarize(mean = mean(YIN16 - YOB),
+            sd = sd(YIN16 - YOB))
+round(age_hire_total)
 
-employ_total <- gm_dta_cox %>% 
-  summarize(n = round(median(YOUT16 - yrin16)))
+## ALD
+age_hire_ald <- gm_dta_cox %>% 
+  filter(ALD == 1) %>% 
+    summarize(mean = mean(YIN16 - YOB),
+              sd = sd(YIN16 - YOB))
+round(age_hire_ald)
 
-employ_table <- as.data.frame(employ_table)
-employ_total <- as.data.frame(employ_total)
+age_hire <- c("28 (9)", "28 (9)")
+```
 
-employ <- format(c(employ_table[1, 2], employ_table[2, 2], employ_table[3, 2], employ_table[4, 2], employ_table[5, 2], employ_total[1, 1]), scientific = F)
+```{r}
+# YOB
+## Total
+yob_total <- gm_dta_cox %>% 
+  summarize(mean = mean(YOB),
+            sd = sd(YOB))
+round(yob_total)
 
-# Date of leaving in age category
-out_table <- gm_dta_cox %>% 
-  group_by(age_cat_out) %>% 
-  summarize(n = round(median(YOUT16) + 1900))
+## ALD
+yob_ald <- gm_dta_cox %>% 
+  filter(ALD == 1) %>% 
+    summarize(mean = mean(YOB),
+              sd = sd(YOB))
+round(yob_ald)
 
-out_total <- gm_dta_cox %>% 
-  summarize(n = round(median(YOUT16) + 1900))
+yob <- c("1930 (19)", "1927 (18)")
+```
 
-out_table <- as.data.frame(out_table)
-out_total <- as.data.frame(out_total)
+```{r}
+# Year of leaving work
+## Total
+yol_total <- gm_dta_cox %>% 
+  summarize(mean = mean(YOUT16),
+            sd = sd(YOUT16))
+round(yol_total)
 
-out <- format(c(out_table[1, 2], out_table[2, 2], out_table[3, 2], out_table[4, 2], out_table[5, 2], out_total[1, 1]), scientific = F)
+## ALD
+yol_ald <- gm_dta_cox %>% 
+  filter(ALD == 1) %>% 
+    summarize(mean = mean(YOUT16),
+              sd = sd(YOUT16))
+round(yol_ald)
 
+yol <- c("1977 (17)", "1973 (17)")
+```
+
+```{r}
+# Age at leaving work
+## Total
+age_outs_total <- gm_dta_cox %>% 
+  summarize(mean = mean(age_out),
+            sd = sd(age_out))
+round(age_outs_total)
+
+## ALD
+age_outs_ald <- gm_dta_cox %>% 
+  filter(ALD == 1) %>% 
+    summarize(mean = mean(age_out),
+              sd = sd(age_out))
+round(age_outs_ald)
+
+age_outs <- c("47 (13)", "46 (12)")
+```
+
+```{r}
+# Age at death among deceased
+## Total
+age_death_total <- gm_dta_cox %>% 
+  filter(!(is.na(yod15))) %>% 
+  summarize(mean = mean(yod15 - YOB),
+            sd = sd(yod15 - YOB))
+round(age_death_total)
+
+## ALD
+age_death_ald <- gm_dta_cox %>% 
+  filter(ALD == 1,
+         !(is.na(yod15))) %>% 
+  summarize(mean = mean(yod15 - YOB),
+            sd = sd(yod15 - YOB))
+round(age_death_ald)
+
+age_death <- c("70 (14)", "59 (12)")
+```
+
+```{r, include = TRUE}
 # Maybe table 1
-tableone <- rbind(subjects, py, age, ald,
-                  plant, plant1, plant2, plant3,
+tableone <- rbind(subjects,
                   race, black, white,
-                  hire, employ, out)
-colnames(tableone) <- c("(61,85]", "(19,31]", "(31,41]", "(41,51]", "(51,61]", "Total")
-rownames(tableone) <- c("Subjects",
-                        "Person years of observation",
-                        "Median age at leaving work",
-                        "Alcohol-related liver mortality (ALD) events",
-                        "Plant", "Plant 1", "Plant 2", "Plant 3",
-                        "Race", "Black", "White",
-                        "Median year of hire",
-                        "Median years of employment",
-                        "Median year of leaving work")
+                  sex, female, male,
+                  plant, plant1, plant2, plant3,
+                  follow,
+                  hire,
+                  age_hire,
+                  yob,
+                  yol,
+                  age_outs,
+                  age_death)
 
-kable(tableone) %>% 
+colnames(tableone) <- c("Full Cohort", "ALD death")
+rownames(tableone) <- c("Subjects (person-years)",
+                        "Race (%)", "Black", "White",
+                        "Sex (%)", "Female", "Male",
+                        "Plant (%)", "Plant 1", "Plant 2", "Plant 3",
+                        "Years of follow-up (SD)",
+                        "Mean year of hire (SD)",
+                        "Mean age at hire (SD)",
+                        "Mean year of birth (SD)",
+                        "Mean year of leaving work (SD)",
+                        "Mean age at leaving work (SD)",
+                        "Mean age at death among deceased (SD)")
+
+kable(tableone,
+      booktabs = TRUE) %>% 
   kable_styling(latex_options = "striped") %>% 
-  add_indent(c(6, 7, 8, 10, 11)) %>%
-  row_spec(0, bold = TRUE)
-#  add_footnote()
+  add_indent(c(3, 4, 6, 7, 9, 10, 11)) %>% 
+  row_spec(0, bold = TRUE) %>% 
+  add_footnote("9,099 subjects had an unknown race variable that was imputed to white.")
 ```
