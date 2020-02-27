@@ -1,0 +1,97 @@
+```{r}
+# Calendar year - main exposure
+c(round(exp(coxph_calyear$coefficients), 2)[1], round(exp(confint(coxph_calyear)[1, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[2], round(exp(confint(coxph_calyear)[2, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[3], round(exp(confint(coxph_calyear)[3, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[4], round(exp(confint(coxph_calyear)[4, ]), 2))
+
+cal_obs_res <- c(" ", " ")
+to70_res <- c("1.00", "(--)")
+to80_res <- c("1.49", "(0.99, 2.24)")
+to90_res <- c("1.34", "(0.77, 2.33)")
+to100_res <- c("1.40", "(0.68, 2.87)")
+to120_res <- c("1.60", "(0.63, 4.08)")
+```
+
+```{r}
+# Plant
+c(round(exp(coxph_calyear$coefficients), 2)[5], round(exp(confint(coxph_calyear)[5, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[6], round(exp(confint(coxph_calyear)[6, ]), 2))
+
+plant_res <- c(" ", " ")
+plant1_res <- c("1.00", "(--)")
+plant2_res <- c("0.69", "(0.55, 0.88)")
+plant3_res <- c("0.47", "(0.36, 0.62)")
+```
+
+```{r}
+# Sex
+c(round(exp(coxph_calyear$coefficients), 2)[7], round(exp(confint(coxph_calyear)[7, ]), 2))
+
+sex_res <- c(" ", " ")
+female_res <- c("1.00", "(--)")
+male_res <- c("2.09", "(1.35, 3.22)")
+```
+
+```{r}
+# Race
+c(round(exp(coxph_calyear$coefficients), 2)[8], round(exp(confint(coxph_calyear)[8, ]), 2))
+
+race_res <- c(" ", " ")
+black_res <- c("1.00", "(--)")
+white_res <- c("1.32", "(1.00, 1.74)")
+```
+
+```{r}
+# Age categories
+c(round(exp(coxph_calyear$coefficients), 2)[9], round(exp(confint(coxph_calyear)[9, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[10], round(exp(confint(coxph_calyear)[10, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[11], round(exp(confint(coxph_calyear)[11, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[12], round(exp(confint(coxph_calyear)[12, ]), 2))
+
+age_cat_res <- c(" ", " ")
+to49_res <- c("1.00", "(--)")
+to56_res <- c("1.65", "(1.17, 2.33)")
+to62_res <- c("2.48", "(1.75, 3.52)")
+to69_res <- c("2.45", "(1.68, 3.56)")
+to110_res <- c("2.70", "(1.81, 4.04)")
+```
+
+```{r}
+# Decade of hire
+c(round(exp(coxph_calyear$coefficients), 2)[13], round(exp(confint(coxph_calyear)[13, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[14], round(exp(confint(coxph_calyear)[14, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[15], round(exp(confint(coxph_calyear)[15, ]), 2))
+c(round(exp(coxph_calyear$coefficients), 2)[16], round(exp(confint(coxph_calyear)[16, ]), 2))
+
+hire_res <- c(" ", " ")
+to46_res <- c("1.00", "(--)")
+to55_res <- c("1.17", "(0.82, 1.67)")
+to63_res <- c("1.11", "(0.73, 1.70)")
+to72_res <- c("0.87", "(0.48, 1.58)")
+to91_res <- c("0.80", "(0.38, 1.71)")
+```
+
+```{r, include = TRUE}
+# Model with covariate results
+cov_results <- rbind(cal_obs_res, to70_res, to80_res, to90_res, to100_res, to120_res,
+                     plant_res, plant1_res, plant2_res, plant3_res,
+                     sex_res, female_res, male_res,
+                     race_res, black_res, white_res,
+                     age_cat_res, to49_res, to56_res, to62_res, to69_res, to110_res,
+                     hire_res, to46_res, to55_res, to63_res, to72_res, to91_res)
+rownames(cov_results) <- c("Did not leave work", "Left work",
+                           "Age", "(16, 30]", "(30, 40]", "(40, 50]", "(50, 60]", "(60, 70]", "(70, 80]", "(80, 110]",
+                           "Sex", "Female", "Male",
+                           "Race", "Black", "White",
+                           "Plant", "Plant 1", "Plant 2", "Plant 3",
+                           "Calendar year", "(1940, 1960]", "(1960, 1970]", "(1970, 1980]", "(1980, 1990],", "(1990, 2000]", "(2000, 2015]",
+                           "Hire year", "(1940, 1950]", "(1950, 1960]", "(1960, 1970]", "(1970, 1980]", "(1980, 1990]")
+colnames(cov_results) <- c("HR", "(95% CI)")
+
+kable(cov_results,
+      booktabs = TRUE) %>% 
+  kable_styling(latex_options = c("striped")) %>% 
+  row_spec(0, bold = TRUE) %>% 
+  add_indent(c(1, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 15, 16, 18, 19, 20, 22, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33)) 
+```
