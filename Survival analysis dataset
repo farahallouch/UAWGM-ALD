@@ -1,0 +1,22 @@
+```{r}
+cut_points <- unique(gm_dta$person_years.0[gm_dta$ALD == 1])
+
+gm_split <- survSplit(data = gm_dta,
+                     cut = cut_points,
+                     end = "person_years.0",
+                     start = "time0",
+                     event = "ALD")
+
+gm_split <- gm_split %>% 
+  mutate(age = age + time0,
+         age_cat = cut(age, breaks = c(18, 50, 60, 70, 100)),
+         cal_year = trunc(cal_year + time0),
+         cal_year_cat = cut(cal_year, breaks = c(40, 70, 80, 90, 100, 116)),
+         left_work = ifelse(cal_year < YOUT16, 0,
+                            ifelse(cal_year >= YOUT16 & YOUT16 != 95, 1, NA)),
+         left_b4_55 = ifelse(left_work == 1 & age_out <= 55, 1,
+                             ifelse(is.na(left_work), NA, 0)),
+         left_b4_60 = ifelse(left_work == 1 & age_out <= 60, 1,
+                             ifelse(is.na(left_work), NA, 0)))  %>% 
+  filter(!(age >= 100))
+```
