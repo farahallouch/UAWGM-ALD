@@ -1,0 +1,28 @@
+```{r}
+# Left work model
+coxph_left_work <- coxph(Surv(time0, person_years.0, ALD) ~ left_work + factor(PLANT) + sex + race + factor(age_cat) + factor(cal_year_cat) + factor(hire_decade), 
+      data = gm_split,
+      ties = "efron") # model overfits with calendar year and hire decade
+
+summary(coxph_left_work)
+
+vif(coxph_left_work)
+```
+
+```{r}
+# Left work before age 55 model
+coxph_left_work_55 <- coxph(Surv(time0, person_years.0, ALD) ~ left_b4_55 + factor(PLANT) + sex + race + factor(age_cat) + factor(cal_year_cat) + factor(hire_decade), 
+      data = gm_split,
+      ties = "efron") # model overfits with calendar year and hire decade
+
+summary(coxph_left_work_55)
+```
+
+```{r}
+# Left work before age 60 model
+coxph_left_work_60 <- coxph(Surv(time0, person_years.0, ALD) ~ left_b4_60 + factor(PLANT) + sex + race + factor(cal_year_cat) + factor(hire_decade), 
+      data = gm_split,
+      ties = "efron") # model overfits with calendar year and hire decade
+
+summary(coxph_left_work_60)
+```
