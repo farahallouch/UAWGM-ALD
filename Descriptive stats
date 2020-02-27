@@ -1,0 +1,566 @@
+# ALD mortality rates over time
+```{r}
+# ALD over time
+denom_py <- gm_dta_cox_tv %>%
+  group_by(cal_obs) %>%
+  summarize(n_py = n_distinct(STUDYNO))
+
+num_ALD <- gm_dta_cox_tv %>%
+  filter(ALD == 1) %>%
+  group_by(cal_obs) %>% 
+  summarize(ALD = n_distinct(STUDYNO)) 
+
+new <- full_join(denom_py, num_ALD, by = "cal_obs") %>%
+  mutate(ALD = ifelse(is.na(ALD), 0, ALD)) %>% 
+  mutate(cal_obs_cat = cut(cal_obs, breaks = c(1940, 1970, 1980, 1990, 2000, 2016))) %>% 
+  group_by(cal_obs_cat) %>% 
+  summarize(ALD = sum(ALD),
+            n_py = sum(n_py),
+            rate = ALD / n_py*100000) %>% 
+  mutate(lower.ci = pois.approx(ALD, n_py)[ , 4]*100000, # lower 95% CI for rate
+         upper.ci = pois.approx(ALD, n_py)[ , 5]*100000) # upper 95% CI for rate
+```
+
+```{r, include = TRUE}
+ggplot(data = new, aes(x = cal_obs_cat, y = rate)) +
+  geom_errorbar(aes(ymin = lower.ci, ymax = upper.ci), width = 0.1) +
+  geom_line() +
+  geom_point() +
+  labs(x = "Calendar Year",
+       y = "ALD mortality rates per 100,000 person-years") +
+  ylim(0, 45) +
+  scale_x_discrete(labels = c("(1940, 1970]", "(1970, 1980]", "(1980, 1990]", "(1990, 2000]", "(2000, 2015]")) +
+  theme_minimal() +
+  ggtitle("ALD mortality rates per calendar year with 
+          95% confidence intervals in the UAW-GM cohort")
+```
+
+\newpage
+# Age-adjusted ALD mortality rates over time
+```{r}
+# "External" population
+ext_pop_denom <- gm_dta_cox_tv %>% 
+  group_by(age) %>% 
+  summarize(n_py = n_distinct(STUDYNO))
+
+ext_pop_ALD <- gm_dta_cox_tv %>% 
+  filter(ALD == 1) %>% 
+  group_by(age) %>% 
+  summarize(ALD = n_distinct(STUDYNO))
+
+ext_pop <- full_join(ext_pop_denom, ext_pop_ALD, by = c("age")) %>%
+  mutate(ALD = ifelse(is.na(ALD), 0, ALD)) %>% 
+  mutate(age_cat = cut(age, breaks = c(18, 49, 56, 62, 69, 100))) %>% 
+  group_by(age_cat) %>% 
+  summarize(ALD = sum(ALD),
+            n_py = sum(n_py),
+            rate = ALD / n_py*100000) %>% 
+  mutate(lower.ci = pois.approx(ALD, n_py)[ , 4]*100000, # lower 95% CI for rate
+         upper.ci = pois.approx(ALD, n_py)[ , 5]*100000) # upper 95% CI for rate
+
+# Groups
+
+denom_py_adj <- gm_dta_cox_tv %>%
+  group_by(cal_obs, age) %>%
+  summarize(n_py = n_distinct(STUDYNO))
+
+num_ALD_adj <- gm_dta_cox_tv %>%
+  filter(ALD == 1) %>%
+  group_by(cal_obs, age) %>% 
+  summarize(ALD = n_distinct(STUDYNO)) 
+
+new_adj <- full_join(denom_py_adj, num_ALD_adj, by = c("cal_obs", "age")) %>%
+  mutate(ALD = ifelse(is.na(ALD), 0, ALD)) %>% 
+  mutate(cal_obs_cat = cut(cal_obs, breaks = c(1940, 1970, 1980, 1990, 2000, 2016)),
+         age_cat = cut(age, breaks = c(16, 49, 56, 62, 69, 110))) %>% 
+  group_by(cal_obs_cat, age_cat) %>% 
+  summarize(ALD = sum(ALD),
+            n_py = sum(n_py),
+            rate = ALD / n_py) %>% 
+  mutate(lower.ci = pois.approx(ALD, n_py)[ , 4]*100000, # lower 95% CI for rate
+         upper.ci = pois.approx(ALD, n_py)[ , 5]*100000) # upper 95% CI for rate
+
+under_70 <- new_adj %>% 
+  filter(cal_obs_cat == "(1.94e+03,1.97e+03]")
+
+under_80 <- new_adj %>% 
+  filter(cal_obs_cat == "(1.97e+03,1.98e+03]")
+
+under_90 <- new_adj %>% 
+  filter(cal_obs_cat == "(1.98e+03,1.99e+03]")
+
+under_100 <- new_adj %>% 
+  filter(cal_obs_cat == "(1.99e+03,2e+03]")
+
+under_116 <- new_adj %>% 
+  filter(cal_obs_cat == "(2e+03,2.02e+03]")
+
+# Maybe direct standardization?
+under_70_adj <- ageadjust.direct(count = under_70$ALD,
+                   pop = under_70$n_py,
+                   rate = under_70$rate,
+                   stdpop = ext_pop$n_py)
+
+under_80_adj <- ageadjust.direct(count = under_80$ALD,
+                   pop = under_80$n_py,
+                   rate = under_80$rate,
+                   stdpop = ext_pop$n_py)
+
+under_90_adj <- ageadjust.direct(count = under_90$ALD,
+                   pop = under_90$n_py,
+                   rate = under_90$rate,
+                   stdpop = ext_pop$n_py)
+
+under_100_adj <- ageadjust.direct(count = under_100$ALD,
+                   pop = under_100$n_py,
+                   rate = under_100$rate,
+                   stdpop = ext_pop$n_py)
+
+under_116_adj <- ageadjust.direct(count = under_116$ALD,
+                   pop = under_116$n_py,
+                   rate = under_116$rate,
+                   stdpop = ext_pop$n_py)
+
+age_adj <- data.frame(rbind(under_70_adj, under_80_adj, under_90_adj, under_100_adj, under_116_adj))
+
+cal_year <- unique(new_adj$cal_obs_cat)
+
+age_adj <- cbind(cal_year, age_adj)
+
+age_adj <- age_adj %>% 
+  mutate(adj.rate = adj.rate*100000,
+         lci = lci*100000,
+         uci = uci*100000)
+```
+
+```{r}
+# Age-adjusted race rates
+# "External" population
+ext_race_denom <- gm_dta_cox_tv %>% 
+  group_by(race) %>% 
+  summarize(n_py = n_distinct(STUDYNO))
+
+ext_race_ALD <- gm_dta_cox_tv %>% 
+  filter(ALD == 1) %>% 
+  group_by(race) %>% 
+  summarize(ALD = n_distinct(STUDYNO))
+
+ext_race_pop <- full_join(ext_race_denom, ext_race_ALD, by = c("race")) %>%
+  group_by(race) %>% 
+  mutate(ALD = ifelse(is.na(ALD), 0, ALD)) %>% 
+  summarize(ALD = sum(ALD),
+            n_py = sum(n_py),
+            rate = ALD / n_py*100000) %>% 
+  mutate(lower.ci = pois.approx(ALD, n_py)[ , 4]*100000, # lower 95% CI for rate
+         upper.ci = pois.approx(ALD, n_py)[ , 5]*100000) # upper 95% CI for rate
+
+# Groups
+
+denom_py_race <- gm_dta_cox_tv %>%
+  group_by(cal_obs, age, race) %>%
+  summarize(n_py = n_distinct(STUDYNO))
+
+num_ALD_race <- gm_dta_cox_tv %>%
+  filter(ALD == 1) %>%
+  group_by(cal_obs, age, race) %>% 
+  summarize(ALD = n_distinct(STUDYNO)) 
+
+race_adj <- full_join(denom_py_race, num_ALD_race, by = c("cal_obs", "age", "race")) %>%
+  mutate(ALD = ifelse(is.na(ALD), 0, ALD)) %>% 
+  mutate(cal_obs_cat = cut(cal_obs, breaks = c(1940, 1970, 1980, 1990, 2000, 2016)),
+         age_cat = cut(age, breaks = c(16, 49, 56, 62, 69, 110))) %>% 
+  group_by(cal_obs_cat, age_cat, race) %>% 
+  summarize(ALD = sum(ALD),
+            n_py = sum(n_py),
+            rate = ALD / n_py) %>% 
+  mutate(lower.ci = pois.approx(ALD, n_py)[ , 4], # lower 95% CI for rate
+         upper.ci = pois.approx(ALD, n_py)[ , 5]) # upper 95% CI for rate
+
+under_70_race0 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.94e+03,1.97e+03]",
+         race == 0)
+
+under_70_race1 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.94e+03,1.97e+03]",
+         race == 1)
+
+under_80_race0 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.97e+03,1.98e+03]",
+         race == 0)
+
+under_80_race1 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.97e+03,1.98e+03]",
+         race == 1)
+
+under_90_race0 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.98e+03,1.99e+03]",
+         race == 0)
+
+under_90_race1 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.98e+03,1.99e+03]",
+         race == 1)
+
+under_100_race0 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.99e+03,2e+03]",
+         race == 0)
+
+under_100_race1 <- race_adj %>% 
+  filter(cal_obs_cat == "(1.99e+03,2e+03]",
+         race == 1)
+
+under_116_race0 <- race_adj %>% 
+  filter(cal_obs_cat == "(2e+03,2.02e+03]",
+         race == 0)
+
+under_116_race1 <- race_adj %>% 
+  filter(cal_obs_cat == "(2e+03,2.02e+03]",
+         race == 1)
+
+# Maybe direct standardization?
+under_70_adj_race0 <- ageadjust.direct(count = under_70_race0$ALD,
+                   pop = under_70_race0$n_py,
+                   rate = under_70_race0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_70_adj_race1 <- ageadjust.direct(count = under_70_race1$ALD,
+                   pop = under_70_race1$n_py,
+                   rate = under_70_race1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_80_adj_race0 <- ageadjust.direct(count = under_80_race0$ALD,
+                   pop = under_80_race0$n_py,
+                   rate = under_80_race0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_80_adj_race1 <- ageadjust.direct(count = under_80_race1$ALD,
+                   pop = under_80_race1$n_py,
+                   rate = under_80_race1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_90_adj_race0 <- ageadjust.direct(count = under_90_race0$ALD,
+                   pop = under_90_race0$n_py,
+                   rate = under_90_race0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_90_adj_race1 <- ageadjust.direct(count = under_90_race1$ALD,
+                   pop = under_90_race1$n_py,
+                   rate = under_90_race1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_100_adj_race0 <- ageadjust.direct(count = under_100_race0$ALD,
+                   pop = under_100_race0$n_py,
+                   rate = under_100_race0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_100_adj_race1 <- ageadjust.direct(count = under_100_race1$ALD,
+                   pop = under_100_race1$n_py,
+                   rate = under_100_race1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_116_adj_race0 <- ageadjust.direct(count = under_116_race0$ALD,
+                   pop = under_116_race0$n_py,
+                   rate = under_116_race0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_116_adj_race1 <- ageadjust.direct(count = under_116_race1$ALD,
+                   pop = under_116_race1$n_py,
+                   rate = under_116_race1$rate,
+                   stdpop = ext_pop$n_py)
+
+age_race_adj <- data.frame(rbind(under_70_adj_race0, under_70_adj_race1, under_80_adj_race0, under_80_adj_race1, under_90_adj_race0, under_90_adj_race1, under_100_adj_race0, under_100_adj_race1, under_116_adj_race0, under_116_adj_race1))
+
+cal_year <- c("(1.94e+03,1.97e+03]", "(1.94e+03,1.97e+03]", "(1.97e+03,1.98e+03]", "(1.97e+03,1.98e+03]", "(1.98e+03,1.99e+03]", "(1.98e+03,1.99e+03]", "(1.99e+03,2e+03]", "(1.99e+03,2e+03]", "(2e+03,2.02e+03]", "(2e+03,2.02e+03]")
+
+racex <- c(rep(c(0, 1), 5))
+
+age_race_adj <- cbind(cal_year, age_race_adj, racex)
+
+age_race_adj <- age_race_adj %>% 
+  mutate(racex = ifelse(racex == 0, "Black", "White"))
+
+age_race_adj <- age_race_adj %>% 
+  mutate(adj.rate = adj.rate*100000,
+         lci = lci*100000,
+         uci = uci*100000)
+```
+
+```{r}
+# Age-adjusted sex rates
+# Groups
+
+denom_py_sex <- gm_dta_cox_tv %>%
+  group_by(cal_obs, age, sex) %>%
+  summarize(n_py = n_distinct(STUDYNO))
+
+num_ALD_sex <- gm_dta_cox_tv %>%
+  filter(ALD == 1) %>%
+  group_by(cal_obs, age, sex) %>% 
+  summarize(ALD = n_distinct(STUDYNO)) 
+
+sex_adj <- full_join(denom_py_sex, num_ALD_sex, by = c("cal_obs", "age", "sex")) %>%
+  mutate(ALD = ifelse(is.na(ALD), 0, ALD)) %>% 
+  mutate(cal_obs_cat = cut(cal_obs, breaks = c(1940, 1970, 1980, 1990, 2000, 2016)),
+         age_cat = cut(age, breaks = c(16, 49, 56, 62, 69, 110))) %>% 
+  group_by(cal_obs_cat, age_cat, sex) %>% 
+  summarize(ALD = sum(ALD),
+            n_py = sum(n_py),
+            rate = ALD / n_py) %>% 
+  mutate(lower.ci = pois.approx(ALD, n_py)[ , 4], # lower 95% CI for rate
+         upper.ci = pois.approx(ALD, n_py)[ , 5]) # upper 95% CI for rate
+
+under_70_sex0 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.94e+03,1.97e+03]",
+         sex == 0)
+
+under_70_sex1 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.94e+03,1.97e+03]",
+         sex == 1)
+
+under_80_sex0 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.97e+03,1.98e+03]",
+         sex == 0)
+
+under_80_sex1 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.97e+03,1.98e+03]",
+         sex == 1)
+
+under_90_sex0 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.98e+03,1.99e+03]",
+         sex == 0)
+
+under_90_sex1 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.98e+03,1.99e+03]",
+         sex == 1)
+
+under_100_sex0 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.99e+03,2e+03]",
+         sex == 0)
+
+under_100_sex1 <- sex_adj %>% 
+  filter(cal_obs_cat == "(1.99e+03,2e+03]",
+         sex == 1)
+
+under_116_sex0 <- sex_adj %>% 
+  filter(cal_obs_cat == "(2e+03,2.02e+03]",
+         sex == 0)
+
+under_116_sex1 <- sex_adj %>% 
+  filter(cal_obs_cat == "(2e+03,2.02e+03]",
+         sex == 1)
+
+# Maybe direct standardization?
+under_70_adj_sex0 <- ageadjust.direct(count = under_70_sex0$ALD,
+                   pop = under_70_sex0$n_py,
+                   rate = under_70_sex0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_70_adj_sex1 <- ageadjust.direct(count = under_70_sex1$ALD,
+                   pop = under_70_sex1$n_py,
+                   rate = under_70_sex1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_80_adj_sex0 <- ageadjust.direct(count = under_80_sex0$ALD,
+                   pop = under_80_sex0$n_py,
+                   rate = under_80_sex0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_80_adj_sex1 <- ageadjust.direct(count = under_80_sex1$ALD,
+                   pop = under_80_sex1$n_py,
+                   rate = under_80_sex1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_90_adj_sex0 <- ageadjust.direct(count = under_90_sex0$ALD,
+                   pop = under_90_sex0$n_py,
+                   rate = under_90_sex0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_90_adj_sex1 <- ageadjust.direct(count = under_90_sex1$ALD,
+                   pop = under_90_sex1$n_py,
+                   rate = under_90_sex1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_100_adj_sex0 <- ageadjust.direct(count = under_100_sex0$ALD,
+                   pop = under_100_sex0$n_py,
+                   rate = under_100_sex0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_100_adj_sex1 <- ageadjust.direct(count = under_100_sex1$ALD,
+                   pop = under_100_sex1$n_py,
+                   rate = under_100_sex1$rate,
+                   stdpop = ext_pop$n_py)
+
+under_116_adj_sex0 <- ageadjust.direct(count = under_116_sex0$ALD,
+                   pop = under_116_sex0$n_py,
+                   rate = under_116_sex0$rate,
+                   stdpop = ext_pop$n_py)
+
+under_116_adj_sex1 <- ageadjust.direct(count = under_116_sex1$ALD,
+                   pop = under_116_sex1$n_py,
+                   rate = under_116_sex1$rate,
+                   stdpop = ext_pop$n_py)
+
+age_sex_adj <- data.frame(rbind(under_70_adj_sex0, under_70_adj_sex1, under_80_adj_sex0, under_80_adj_sex1, under_90_adj_sex0, under_90_adj_sex1, under_100_adj_sex0, under_100_adj_sex1, under_116_adj_sex0, under_116_adj_sex1))
+
+cal_year <- c("(1.94e+03,1.97e+03]", "(1.94e+03,1.97e+03]", "(1.97e+03,1.98e+03]", "(1.97e+03,1.98e+03]", "(1.98e+03,1.99e+03]", "(1.98e+03,1.99e+03]", "(1.99e+03,2e+03]", "(1.99e+03,2e+03]", "(2e+03,2.02e+03]", "(2e+03,2.02e+03]")
+
+sexx <- c(rep(c(0, 1), 5))
+
+age_sex_adj <- cbind(cal_year, age_sex_adj, sexx)
+
+age_sex_adj <- age_sex_adj %>% 
+  mutate(sexx = ifelse(sexx == 0, "Female", "Male"))
+
+age_sex_adj <- age_sex_adj %>% 
+  mutate(adj.rate = adj.rate*100000,
+         lci = lci*100000,
+         uci = uci*100000)
+```
+
+```{r, include = TRUE}
+gm_dta_cox_tv %>% 
+  filter(ALD == 1) %>% 
+  group_by(cal_obs_cat) %>% 
+  summarize(n = n())
+
+ggplot(data = age_adj, aes(x = as.numeric(cal_year), y = adj.rate)) +
+  geom_errorbar(aes(ymin = lci, ymax = uci), width = 0.1) +
+  geom_point(size = 2) +
+  geom_line() +
+  geom_text(label = c("N = 96", "N = 94", "N = 88", "N = 87", "N = 107"),
+            nudge_x = 0.25, nudge_y = 4,
+            check_overlap = TRUE) +
+  labs(x = "Calendar Year",
+       y = "Age-adjusted ALD mortality rates per 
+       100,000 person-years") +
+  ylim(0, 50) +
+  scale_x_continuous(labels = c("(1940, 1970]", "(1970, 1980]", "(1980, 1990]", "(1990, 2000]", "(2000, 2015]")) +
+  theme_minimal() +
+  ggtitle("Age-adjusted ALD mortality rates per calendar year with 
+          95% confidence intervals in the UAW-GM cohort")
+
+ggplot(data = new_adj, aes(x = as.numeric(cal_obs_cat), y = rate*100000, shape = age_cat)) +
+#  geom_errorbar(aes(ymin = lower.ci*100000, ymax = upper.ci*100000), width = 0.1) +
+  geom_point(size = 2) +
+  geom_line() +
+  labs(x = "Calendar Year",
+       y = "Age-specific ALD mortality rates per 
+       100,000 person-years") +
+  ylim(0, 90) +
+  xlab("Calendar year") +
+  labs(shape = "Age categories") +
+  scale_x_continuous(labels = c("(1940, 1970]", "(1970, 1980]", "(1980, 1990]", "(1990, 2000]", "(2000, 2015]")) +
+  theme_minimal() +
+  ggtitle("Age specific ALD mortality rates per calendar year with 
+          95% confidence intervals in the UAW-GM cohort")
+
+ggplot(data = age_race_adj, aes(x = as.numeric(cal_year), y = adj.rate, shape = racex)) +
+  geom_point(size = 2) +
+  geom_line() +
+  labs(x = "Calendar Year",
+       y = "Age-adjusted ALD mortality rates per 
+       100,000 person-years") +
+  ylim(0, 40) +
+  xlab("Calendar year") +
+  labs(shape = "Race") +
+  scale_x_continuous(labels = c("(1940, 1970]", "(1970, 1980]", "(1980, 1990]", "(1990, 2000]", "(2000, 2015]")) +
+  theme_minimal() +
+  ggtitle("Age-adjusted ALD mortality rates per calendar year with 
+          95% confidence intervals in the UAW-GM cohort")
+
+ggplot(data = age_sex_adj, aes(x = as.numeric(cal_year), y = adj.rate, shape = sexx)) +
+  geom_point(size = 2.5) +
+  geom_line() +
+  labs(x = "Calendar Year",
+       y = "Age-adjusted ALD mortality rates per 
+       100,000 person-years") +
+  ylim(0, 40) +
+  xlab("Calendar year") +
+  labs(shape = "Sex") +
+  scale_x_continuous(labels = c("(1940, 1970]", "(1970, 1980]", "(1980, 1990]", "(1990, 2000]", "(2000, 2015]")) +
+  theme_minimal() +
+  ggtitle("Age-adjusted ALD mortality rates per calendar year in the UAW-GM cohort")
+```
+
+\newpage
+# Time after leaving work till ALD death in total cohort
+```{r, include = TRUE}
+gm_dta %>% 
+  filter(!(is.na(yod15))) %>% 
+  gghistogram(x = "person_years",
+                 binwidth = 1,
+                 add = "mean",
+                 rug = TRUE,
+                 fill = "darkslategray") +
+  theme_minimal() + 
+  ylim(0, 800) +
+  xlim(0, 80) +
+  xlab("Years since hire") +
+  ylab("Death count") +
+  ggtitle("Years since hire till death in overall UAW-GM cohort with mean")
+
+gm_dta %>% 
+  filter(ALD == 1) %>% 
+  gghistogram(x = "person_years",
+                 binwidth = 1,
+                 add = "mean",
+                 rug = TRUE,
+                 fill = "active_death",
+                 palette = c("darkslategray", "black"),
+                 legend.title = "Died during active 
+              employment") +
+  theme_minimal() + 
+  ylim(0, 25) +
+  xlab("Years since hire") +
+  ylab("Death count") +
+  ggtitle("Years since hire till ALD death in UAW-GM cohort with mean")
+```
+
+```{r, include = TRUE}
+# Time to ALD death after leaving work
+gm_dta %>% 
+  filter(ALD == 1,
+         !(YOUT16 > yod15),
+         !(is.na(time2death))) %>% 
+  gghistogram(x = "time2death",
+              fill = "darkslategray",
+              binwidth = 1,
+              add = "mean",
+              rug = TRUE) + 
+  theme_minimal() +
+  xlab("Time to ALD death after leaving work") +
+  ylab("Count of ALD death") +
+  ggtitle("Time to ALD death after leaving work in the UAW-GM cohort with mean")
+
+gm_dta %>%
+  filter(ALD == 1 & time2death <= 1 & time2death > 0) %>% 
+  ggplot(aes(x = time2death*365)) + 
+  geom_histogram(binwidth = 20) +
+  theme_minimal() +
+  ylim(0, 20) +
+  xlim(0, 365) +
+  xlab("Days to ALD death <= 1 year after leaving work") +
+  ylab("Count of ALD death") +
+  ggtitle("Time to ALD death <= 1 year after leaving work in the UAW-GM cohort")
+
+```
+
+
+# ALD vs age at death
+```{r, include = TRUE}
+gm_dta %>% 
+  filter(ALD == 1) %>% 
+  gghistogram(x = "age_death",
+                 binwidth = 1,
+                 add = "mean",
+                 rug = TRUE,
+                 fill = "active_death",
+                 palette = c("darkslategray", "black"),
+                 legend.title = "Died during active
+              employment") +
+  theme_minimal() + 
+  xlim(20, 100) +
+  ylim(0, 25) +
+  xlab("Age at ALD death") +
+  ylab("Count") +
+  ggtitle("Age at ALD death in the UAW-GM cohort with mean")
+```
